@@ -1,0 +1,56 @@
+import numpy as np
+import tensorflow as tf
+from tensorflow.keras.datasets import imdb
+from tensorflow.keras.preprocessing.sequence import pad_sequences
+from tensorflow.keras.models import Sequential
+from tensorflow.keras.layers import Embedding, LSTM, Dense, Dropout
+from tensorflow.keras.optimizers import Adam
+from sklearn.metrics import accuracy_score, confusion_matrix, classification_report
+import matplotlib.pyplot as plt
+import seaborn as sns
+from tensorflow.keras.preprocessing.text import Tokenizer
+from tensorflow.keras.preprocessing.sequence import pad_sequences
+df = pd.read_csv('IMDB Dataset.csv')
+df.head() 
+df.isna().any()
+"clearly,we have no data as NA"
+y_dummies = pd.get_dummies(df['sentiment'], prefix='sentiment').astype(int)
+y = y_dummies.values
+x = df['review']
+y = y_dummies.values
+num_words = 10000
+tokenizer = Tokenizer(num_words=num_words)
+tokenizer.fit_on_texts(x)
+
+# Convert text to sequences
+x_sequences = tokenizer.texts_to_sequences(x)
+x_padded = pad_sequences(x_sequences, maxlen=200)
+from sklearn.model_selection import train_test_split
+x_train, x_test, y_train, y_test = train_test_split(x_padded, y, test_size=0.2, random_state=42)
+x_train_small = x_train[:500]  
+y_train_small = y_train[:500]
+model = Sequential([
+    Embedding(input_dim=num_words, output_dim=128, input_length=200),
+    LSTM(64, dropout=0.2, recurrent_dropout=0.2),
+    Dense(y.shape[1], activation='softmax')
+])
+model.compile(optimizer=Adam(learning_rate=0.001), loss='categorical_crossentropy', metrics=['accuracy'])
+LSTmodel = model.fit(x_train_small, y_train_small, epochs=10, batch_size=64, validation_split=0.2, verbose=1)
+"clearly seen that training dataset has a high accuracy on 10th epochs i.e 99%."
+y_pred_prob = model.predict(x_test)
+y_pred = np.argmax(y_pred_prob, axis=1)
+y_test_labels = np.argmax(y_test, axis=1)
+from sklearn.metrics import accuracy_score
+
+accuracy = accuracy_score(y_test_labels, y_pred)
+print('Test Accuracy:', accuracy)
+"clearly seen that the accuracy for test dataset is  67%"
+from sklearn.metrics import confusion_matrix
+cm = confusion_matrix(y_test_labels,y_pred)
+cm
+import seaborn as sn
+plt.figure(figsize=(7,5))
+sn.heatmap(cm, annot=True)
+plt.xlabel('predicted')
+plt.ylabel('Truth')
+
